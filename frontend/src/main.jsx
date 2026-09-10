@@ -3,6 +3,28 @@ import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
 
+// Catch any global errors (including Leaflet internal async errors) that
+// React's ErrorBoundary cannot catch (errors in timers, animation frames, etc.)
+window.addEventListener('error', (e) => {
+  const root = document.getElementById('root');
+  if (root) {
+    root.innerHTML = `<div style="background:#090E0B;color:#10B981;font-family:monospace;padding:40px;min-height:100vh">
+      <h1 style="color:#ef4444;margin-bottom:16px">⚠ GLOBAL JS ERROR</h1>
+      <pre style="color:#ef4444;font-size:12px;background:#111813;padding:16px;word-break:break-word;white-space:pre-wrap">${e.message}\n\n${e.filename}:${e.lineno}</pre>
+    </div>`;
+  }
+});
+
+window.addEventListener('unhandledrejection', (e) => {
+  const root = document.getElementById('root');
+  if (root) {
+    root.innerHTML = `<div style="background:#090E0B;color:#10B981;font-family:monospace;padding:40px;min-height:100vh">
+      <h1 style="color:#ef4444;margin-bottom:16px">⚠ UNHANDLED PROMISE REJECTION</h1>
+      <pre style="color:#ef4444;font-size:12px;background:#111813;padding:16px;word-break:break-word;white-space:pre-wrap">${String(e.reason)}</pre>
+    </div>`;
+  }
+});
+
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props)
