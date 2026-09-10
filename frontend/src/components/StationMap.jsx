@@ -1,82 +1,103 @@
-import React, { useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import React, { useEffect, Suspense } from 'react';
 import L from 'leaflet';
 
 // Custom Leaflet marker icons
 const createCustomIcon = (color) => L.divIcon({
   className: 'custom-map-icon',
-  html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 10px ${color};"></div>`,
+  html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 6px ${color};"></div>`,
   iconSize: [14, 14],
   iconAnchor: [7, 7]
 });
 
+// Dynamically import react-leaflet to avoid SSR/build issues
+const MapContainer = React.lazy(() => import('react-leaflet').then(m => ({ default: m.MapContainer })));
+const TileLayer = React.lazy(() => import('react-leaflet').then(m => ({ default: m.TileLayer })));
+const Marker = React.lazy(() => import('react-leaflet').then(m => ({ default: m.Marker })));
+const Popup = React.lazy(() => import('react-leaflet').then(m => ({ default: m.Popup })));
+
 function MapBoundsFitter({ stations }) {
-  const map = useMap();
+  // Import useMap lazily inside the component
+  const [useMapHook, setUseMapHook] = React.useState(null);
+
   useEffect(() => {
-    if (stations && stations.length > 0) {
-      const bounds = L.latLngBounds(stations.map(st => [st.latitude, st.longitude]));
-      map.fitBounds(bounds, { padding: [50, 50] });
+    import('react-leaflet').then(m => setUseMapHook(() => m.useMap));
+  }, []);
+
+  if (!useMapHook) return null;
+  return <BoundsFitterInner stations={stations} useMapHook={useMapHook} />;
+}
+
+function BoundsFitterInner({ stations, useMapHook }) {
+  const map = useMapHook();
+  useEffect(() => {
+    try {
+      if (stations && stations.length > 0 && map) {
+        const bounds = L.latLngBounds(stations.map(st => [st.latitude, st.longitude]));
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    } catch (e) {
+      console.warn('Map bounds fit failed:', e);
     }
   }, [stations, map]);
   return null;
 }
 
+function MapFallback() {
+  return (
+    <div className="w-full h-full flex items-center justify-center bg-[#090E0B] border border-[#1D2A22]">
+      <div className="text-[#8E9A92] text-xs font-mono text-center space-y-1">
+        <div className="text-[#10B981] font-bold">⟳ LOADING MAP...</div>
+        <div>GEOSPATIAL MATRIX INITIALIZING</div>
+      </div>
+    </div>
+  );
+}
+
 export default function StationMap({ stations = [] }) {
-  const defaultCenter = [17.40, 78.45]; // Hyderabad center
+  const defaultCenter = [17.69, 78.86]; // Midpoint between Hyderabad and Warangal
 
   return (
-    <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative">
-      <MapContainer
-        center={defaultCenter}
-        zoom={11}
-        scrollWheelZoom={false}
-        className="w-full h-full"
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        
-        <MapBoundsFitter stations={stations} />
+    <div className="w-full h-80 rounded-none overflow-hidden border border-[#1D2A22] shadow-2xl relative">
+      <Suspense fallback={<MapFallback />}>
+        <MapContainer
+          center={defaultCenter}
+          zoom={9}
+          scrollWheelZoom={false}
+          style={{ width: '100%', height: '320px' }}
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-        {stations.map((st) => {
-          const color = st.station_type === 'Air' ? '#10b981' : st.station_type === 'Water' ? '#06b6d4' : '#8b5cf6';
-          return (
-            <Marker
-              key={st.id}
-              position={[st.latitude, st.longitude]}
-              icon={createCustomIcon(color)}
-            >
-              <Popup className="custom-popup">
-                <div className="p-2 text-slate-900 font-sans space-y-1">
-                  <div className="font-bold text-sm text-emerald-700">{st.name}</div>
-                  <div className="text-xs font-semibold text-slate-600">Code: {st.code} ({st.station_type})</div>
-                  <div className="text-xs text-slate-500">Location: {st.location_name}</div>
-                  <div className="mt-1 inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                    Status: {st.status}
+          {stations.map((st) => {
+            const color = st.station_type === 'Air' ? '#10b981' : st.station_type === 'Water' ? '#06b6d4' : '#8b5cf6';
+            return (
+              <Marker
+                key={st.id}
+                position={[st.latitude, st.longitude]}
+                icon={createCustomIcon(color)}
+              >
+                <Popup>
+                  <div style={{ fontFamily: 'monospace', fontSize: '12px', color: '#111', padding: '4px' }}>
+                    <div style={{ fontWeight: 'bold', color: '#065f46' }}>{st.name}</div>
+                    <div style={{ color: '#555' }}>{st.code} · {st.station_type}</div>
+                    <div style={{ color: '#555' }}>{st.location_name}</div>
+                    <div style={{ marginTop: '4px', fontWeight: 'bold', color: '#059669' }}>● {st.status}</div>
                   </div>
-                </div>
-              </Popup>
-            </Marker>
-          );
-        })}
-      </MapContainer>
+                </Popup>
+              </Marker>
+            );
+          })}
+        </MapContainer>
+      </Suspense>
 
-      {/* Map Legend Overlay */}
-      <div className="absolute bottom-3 right-3 bg-slate-900/90 border border-slate-700/70 p-2.5 rounded-xl z-[400] text-[11px] font-medium text-slate-300 space-y-1.5 backdrop-blur-md">
-        <div className="font-bold text-slate-200 text-xs mb-1">Station Types</div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block shadow-sm"></span>
-          <span>Air Monitoring</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 inline-block shadow-sm"></span>
-          <span>Water Quality</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block shadow-sm"></span>
-          <span>Multi-Sensor Array</span>
-        </div>
+      {/* Legend */}
+      <div className="absolute bottom-3 right-3 bg-[#111813]/90 border border-[#1D2A22] p-2 z-[400] text-[10px] font-mono text-[#8E9A92] space-y-1">
+        <div className="font-bold text-white text-[11px] mb-1">STATIONS</div>
+        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>Air</div>
+        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-cyan-500 inline-block"></span>Water</div>
+        <div className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-purple-500 inline-block"></span>Multi</div>
       </div>
     </div>
   );
