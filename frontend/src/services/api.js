@@ -8,7 +8,7 @@ const MOCK_STATIONS = [
   { id: 2, name: "Hussain Sagar Lake Station", code: "ST-002", station_type: "Water", latitude: 17.4239, longitude: 78.4738, status: "Active", location_name: "Hussain Sagar North" },
   { id: 3, name: "Greenbelt Reserve Station", code: "ST-003", station_type: "Multi-sensor", latitude: 17.4435, longitude: 78.3772, status: "Active", location_name: "KBR National Park Area" },
   { id: 4, name: "Industrial Sector Monitor", code: "ST-004", station_type: "Air", latitude: 17.5140, longitude: 78.3840, status: "Active", location_name: "Panchavati Industrial Corridor" },
-  { id: 5, name: "Musi River Basin Station", code: "ST-005", station_type: "Water", latitude: 17.3616, longitude=78.4747, status: "Active", location_name: "Musi River South" },
+  { id: 5, name: "Musi River Basin Station", code: "ST-005", station_type: "Water", latitude: 17.3616, longitude: 78.4747, status: "Active", location_name: "Musi River South" },
   { id: 6, name: "Warangal Smart Environmental Station", code: "ST-006", station_type: "Multi-sensor", latitude: 17.9784, longitude: 79.5941, status: "Active", location_name: "Warangal Kakatiya Corridor" }
 ];
 
