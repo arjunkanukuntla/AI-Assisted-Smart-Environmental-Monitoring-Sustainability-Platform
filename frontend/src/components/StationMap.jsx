@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, CircleMarker } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // Custom Leaflet marker icons
@@ -9,6 +9,17 @@ const createCustomIcon = (color) => L.divIcon({
   iconSize: [14, 14],
   iconAnchor: [7, 7]
 });
+
+function MapBoundsFitter({ stations }) {
+  const map = useMap();
+  useEffect(() => {
+    if (stations && stations.length > 0) {
+      const bounds = L.latLngBounds(stations.map(st => [st.latitude, st.longitude]));
+      map.fitBounds(bounds, { padding: [50, 50] });
+    }
+  }, [stations, map]);
+  return null;
+}
 
 export default function StationMap({ stations = [] }) {
   const defaultCenter = [17.40, 78.45]; // Hyderabad center
@@ -25,6 +36,8 @@ export default function StationMap({ stations = [] }) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        
+        <MapBoundsFitter stations={stations} />
 
         {stations.map((st) => {
           const color = st.station_type === 'Air' ? '#10b981' : st.station_type === 'Water' ? '#06b6d4' : '#8b5cf6';
