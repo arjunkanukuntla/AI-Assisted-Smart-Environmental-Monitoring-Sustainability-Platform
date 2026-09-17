@@ -11,20 +11,31 @@ def get_analytics_trends(db: Session = Depends(get_db)):
     air_records = db.query(AirQualityRecordModel).order_by(AirQualityRecordModel.timestamp.asc()).all()
     water_records = db.query(WaterQualityRecordModel).order_by(WaterQualityRecordModel.timestamp.asc()).all()
 
-    air_aqis = [r.aqi for r in air_records[-24:]] if air_records else [85.0, 92.0, 78.0, 110.0, 95.0]
-    water_wqis = [r.wqi for r in water_records[-24:]] if water_records else [75.0, 78.0, 82.0, 70.0, 68.0]
+    air_aqis = [r.aqi for r in air_records[-24:] if r.aqi is not None]
+    water_wqis = [r.wqi for r in water_records[-24:] if r.wqi is not None]
 
-    forecast = ml_engine.forecast_7day_trends(air_aqis, water_wqis)
+    if not air_aqis and not water_wqis:
+        return {
+            "status": "data_unavailable",
+            "message": "Data Not Available - Pending Live Hardware Sensor Stream Connection",
+            "historical_air_aqi": [],
+            "historical_water_wqi": [],
+            "recent_air_avg": None,
+            "recent_water_avg": None,
+            "forecast_7day": []
+        }
 
-    # Calculate historical averages
-    recent_air_avg = sum(air_aqis) / len(air_aqis) if air_aqis else 95.0
-    recent_water_avg = sum(water_wqis) / len(water_wqis) if water_wqis else 75.0
+    forecast = ml_engine.forecast_7day_trends(air_aqis if air_aqis else [70.0], water_wqis if water_wqis else [75.0])
+
+    recent_air_avg = round(sum(air_aqis) / len(air_aqis), 1) if air_aqis else None
+    recent_water_avg = round(sum(water_wqis) / len(water_wqis), 1) if water_wqis else None
 
     return {
+        "status": "active",
         "historical_air_aqi": air_aqis,
         "historical_water_wqi": water_wqis,
-        "recent_air_avg": round(recent_air_avg, 1),
-        "recent_water_avg": round(recent_water_avg, 1),
+        "recent_air_avg": recent_air_avg,
+        "recent_water_avg": recent_water_avg,
         "forecast_7day": forecast
     }
 

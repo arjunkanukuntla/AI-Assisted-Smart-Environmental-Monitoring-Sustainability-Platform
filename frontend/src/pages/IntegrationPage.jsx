@@ -191,8 +191,15 @@ export default function IntegrationPage() {
                   <div className="font-bold text-emerald-400">{tick.sensor_id} ({tick.station_code})</div>
                   <div className="text-[10px] text-slate-500">{new Date(tick.timestamp).toLocaleTimeString()}</div>
                 </div>
-                <div className="text-right text-[11px]">
-                  <span className="text-slate-300">AQI: <strong>{tick.readings.aqi}</strong></span> | <span className="text-amber-400">pH: <strong>{tick.readings.ph}</strong></span>
+                <div className="text-right text-[11px] space-y-0.5">
+                  <div>
+                    <span className="text-slate-300">AQI: <strong>{tick.readings?.aqi ?? 'N/A'}</strong></span>
+                    {' | '}
+                    <span className="text-emerald-400">PM2.5: <strong>{tick.readings?.pm25 ?? 'N/A'}</strong></span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 italic">
+                    Water Probe: <span className="text-amber-400/80 font-semibold">{tick.readings?.ph != null ? `pH ${tick.readings.ph}` : 'Data Not Available (Sensor Pending)'}</span>
+                  </div>
                 </div>
               </div>
             ))}
