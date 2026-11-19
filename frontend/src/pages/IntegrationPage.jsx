@@ -2,9 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import { Radio, CloudSun, Globe, Satellite, Zap, RefreshCw } from 'lucide-react';
 
+const panelCls = 'bg-[#121215] border border-[#27272A] rounded-lg';
+const metricTile = 'p-3 bg-[#09090B] rounded-md border border-[#27272A]';
+
 export default function IntegrationPage() {
   const [weather, setWeather] = useState(null);
-  const [benchmarks, setBenchmarks] = useState([]);
+  const [benchmarks, setBenchmarks] = useState(null);
   const [satellite, setSatellite] = useState(null);
   const [iotTicks, setIotTicks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,200 +15,194 @@ export default function IntegrationPage() {
   const loadIntegrations = async () => {
     try {
       const [wRes, bRes, sRes, tRes] = await Promise.all([
-        api.getWeather(),
-        api.getOpenAQBenchmarks(),
-        api.getSatelliteImagery(),
-        api.getIoTTick()
+        api.getWeather(), api.getOpenAQBenchmarks(),
+        api.getSatelliteImagery(), api.getIoTTick()
       ]);
       setWeather(wRes.data);
       setBenchmarks(bRes.data);
       setSatellite(sRes.data);
       setIotTicks(prev => [tRes.data, ...prev.slice(0, 4)]);
     } catch (err) {
-      console.error("Error loading reserve integrations:", err);
+      console.error('Integration load error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadIntegrations();
-  }, []);
+  useEffect(() => { loadIntegrations(); }, []);
 
-  const handleSimulateTick = async () => {
+  const handleTick = async () => {
     try {
       const res = await api.getIoTTick();
       setIotTicks(prev => [res.data, ...prev.slice(0, 4)]);
     } catch (err) {
-      console.error("Error generating IoT tick:", err);
+      console.error('IoT tick error:', err);
     }
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="p-6 rounded-2xl glass-panel border border-jungle-700 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="space-y-5 font-sans">
+
+      {/* Page header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono text-xs font-bold border border-teal-500/40">
-              SECTOR 06 MODULE
-            </span>
-            <h2 className="text-xl font-bold text-slate-100 font-mono uppercase">Satellite Remote Sensing & Live IoT Stream</h2>
+          <div className="flex items-center gap-2 mb-0.5">
+            <Radio className="w-4 h-4 text-zinc-400" />
+            <h2 className="text-base font-semibold text-white">IoT Mesh &amp; Gateway Integrations</h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1 font-mono">
-            Direct connections to Open-Meteo atmospheric APIs, NASA Sentinel EONET satellite observations, and live IoT sensor ticks.
+          <p className="text-xs text-zinc-400">
+            Real-time interfaces with Open-Meteo atmospheric models, NASA EONET events, and live IoT sensor mesh.
           </p>
         </div>
-
         <button
           onClick={loadIntegrations}
-          className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold text-xs font-mono flex items-center gap-2 transition shadow-lg shadow-teal-500/20"
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#18181B] hover:bg-zinc-800 text-zinc-200 text-xs font-medium border border-[#27272A] transition-colors disabled:opacity-50 shrink-0"
         >
-          <RefreshCw className="w-4 h-4" />
-          Poll External Feeds
+          <RefreshCw className={`w-3.5 h-3.5 text-zinc-400 ${loading ? 'animate-spin' : ''}`} />
+          Refresh Feeds
         </button>
       </div>
 
-      {/* Grid 1: Weather API & Global AQI Benchmarks */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* OpenWeather Live Data */}
-        <div className="p-5 rounded-2xl glass-panel space-y-4 font-mono">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
-              <CloudSun className="w-4 h-4 text-amber-400" />
-              Open-Meteo Atmospheric Telemetry
-            </h3>
-            <span className="text-xs px-2 py-0.5 rounded font-mono bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-bold">
-              LIVE CONNECTED
+      {/* Top grid: Weather + Benchmarks */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        {/* Weather */}
+        <div className={`${panelCls} overflow-hidden`}>
+          <div className="flex items-center justify-between p-4 border-b border-[#27272A]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white">
+              <CloudSun className="w-3.5 h-3.5 text-zinc-400" />
+              Open-Meteo Atmospheric Stream
+            </div>
+            <span className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-200 border border-zinc-700 font-mono font-medium">
+              Synchronized
             </span>
           </div>
-
-          {weather && (
-            <div className="p-4 rounded-xl bg-jungle-950 border border-jungle-700 space-y-3 text-xs">
+          {weather ? (
+            <div className="p-4 space-y-4">
               <div className="flex items-baseline justify-between">
                 <div>
-                  <div className="text-3xl font-extrabold text-slate-100">{weather.temp_c}°C</div>
-                  <div className="text-slate-400">Feels like {weather.feels_like_c}°C ({weather.weather_condition})</div>
+                  <div className="text-3xl font-bold text-white font-mono tabular-nums">{weather.temp_c}°C</div>
+                  <div className="text-xs text-zinc-400 mt-0.5">Feels like {weather.feels_like_c}°C · {weather.weather_condition}</div>
                 </div>
                 <div className="text-right">
-                  <div className="font-bold text-emerald-400">{weather.location}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">Source: {weather.source}</div>
+                  <div className="text-xs font-medium text-white">{weather.location}</div>
+                  <div className="text-xs text-zinc-400 font-mono mt-0.5">{weather.source}</div>
                 </div>
               </div>
-
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-jungle-800 text-center font-mono">
-                <div className="p-2 rounded bg-jungle-900 border border-jungle-700">
-                  <div className="text-slate-400 text-[10px]">Humidity</div>
-                  <div className="font-bold text-teal-300">{weather.humidity_pct}%</div>
+              <div className="grid grid-cols-3 gap-2">
+                <div className={metricTile}>
+                  <div className="text-xs text-zinc-400 mb-0.5">Humidity</div>
+                  <div className="text-sm font-semibold text-sky-400 font-mono tabular-nums">{weather.humidity_pct}%</div>
                 </div>
-                <div className="p-2 rounded bg-jungle-900 border border-jungle-700">
-                  <div className="text-slate-400 text-[10px]">Wind Speed</div>
-                  <div className="font-bold text-emerald-300">{weather.wind_speed_kmh} km/h</div>
+                <div className={metricTile}>
+                  <div className="text-xs text-zinc-400 mb-0.5">Wind Speed</div>
+                  <div className="text-sm font-semibold text-white font-mono tabular-nums">{weather.wind_speed_kmh} km/h</div>
                 </div>
-                <div className="p-2 rounded bg-jungle-900 border border-jungle-700">
-                  <div className="text-slate-400 text-[10px]">UV Index</div>
-                  <div className="font-bold text-amber-300">{weather.uv_index}</div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* OpenAQ Benchmarks */}
-        <div className="p-5 rounded-2xl glass-panel space-y-4 font-mono">
-          <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
-            <Globe className="w-4 h-4 text-teal-300" />
-            Open-Meteo Real Atmospheric Metrics
-          </h3>
-
-          {benchmarks && (
-            <div className="p-4 rounded-xl bg-jungle-950 border border-jungle-700 space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-2.5 rounded bg-jungle-900 border border-jungle-700">
-                  <div className="text-slate-400 text-[10px]">US AQI Score</div>
-                  <div className="text-xl font-bold text-amber-400">{benchmarks.us_aqi || 70}</div>
-                </div>
-                <div className="p-2.5 rounded bg-jungle-900 border border-jungle-700">
-                  <div className="text-slate-400 text-[10px]">PM2.5 Density</div>
-                  <div className="text-xl font-bold text-emerald-400">{benchmarks.pm25 || 15.0} µg/m³</div>
-                </div>
-                <div className="p-2.5 rounded bg-jungle-900 border border-jungle-700">
-                  <div className="text-slate-400 text-[10px]">PM10 Density</div>
-                  <div className="text-xl font-bold text-teal-300">{benchmarks.pm10 || 27.5} µg/m³</div>
-                </div>
-                <div className="p-2.5 rounded bg-jungle-900 border border-jungle-700">
-                  <div className="text-slate-400 text-[10px]">Ozone (O3)</div>
-                  <div className="text-xl font-bold text-purple-400">{benchmarks.ozone_ppb || 109.0} ppb</div>
+                <div className={metricTile}>
+                  <div className="text-xs text-zinc-400 mb-0.5">UV Index</div>
+                  <div className="text-sm font-semibold text-amber-400 font-mono tabular-nums">{weather.uv_index}</div>
                 </div>
               </div>
             </div>
+          ) : (
+            <div className="p-6 text-center text-xs text-zinc-500">Loading atmospheric feed…</div>
           )}
         </div>
+
+        {/* Benchmarks */}
+        <div className={`${panelCls} overflow-hidden`}>
+          <div className="flex items-center gap-2 p-4 border-b border-[#27272A] text-xs font-semibold text-white">
+            <Globe className="w-3.5 h-3.5 text-zinc-400" />
+            Atmospheric Benchmarks &amp; Baselines
+          </div>
+          {benchmarks ? (
+            <div className="p-4 grid grid-cols-2 gap-2.5">
+              {[
+                { label: 'US AQI Baseline', value: benchmarks.us_aqi || 70, color: 'text-white' },
+                { label: 'PM2.5 Density', value: `${benchmarks.pm25 || 15.0} µg/m³`, color: 'text-zinc-200' },
+                { label: 'PM10 Density', value: `${benchmarks.pm10 || 27.5} µg/m³`, color: 'text-sky-400' },
+                { label: 'Ozone Concentration', value: `${benchmarks.ozone_ppb || 109.0} ppb`, color: 'text-zinc-300' },
+              ].map((m, i) => (
+                <div key={i} className={metricTile}>
+                  <div className="text-xs text-zinc-400 mb-1">{m.label}</div>
+                  <div className={`text-lg font-semibold font-mono tabular-nums ${m.color}`}>{m.value}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-xs text-zinc-500">Loading benchmark baselines…</div>
+          )}
+        </div>
+
       </div>
 
-      {/* Grid 2: Satellite Imagery & Live IoT Stream */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Satellite Imagery Layer Simulator */}
-        <div className="p-5 rounded-2xl glass-panel space-y-4 font-mono">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
-              <Satellite className="w-4 h-4 text-purple-400" />
-              NASA EONET Satellite Remote Sensing Feed
-            </h3>
-            <span className="text-xs font-mono text-purple-300 font-bold">{satellite?.satellite}</span>
-          </div>
+      {/* Bottom grid: Satellite + IoT */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          <div className="space-y-3">
-            {satellite?.layers?.map((layer, idx) => (
-              <div key={idx} className="p-3.5 rounded-xl bg-jungle-950 border border-jungle-700 text-xs space-y-1">
-                <div className="flex justify-between font-bold text-slate-200">
-                  <span>{layer.layer_name}</span>
-                  <span className="text-amber-400">{layer.category}</span>
+        {/* Satellite */}
+        <div className={`${panelCls} overflow-hidden`}>
+          <div className="flex items-center justify-between p-4 border-b border-[#27272A]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white">
+              <Satellite className="w-3.5 h-3.5 text-zinc-400" />
+              NASA EONET Remote Sensing Feed
+            </div>
+            <span className="text-xs text-zinc-400 font-mono">{satellite?.satellite}</span>
+          </div>
+          <div className="divide-y divide-[#27272A]">
+            {satellite?.layers?.map((layer, i) => (
+              <div key={i} className="p-3.5 hover:bg-[#18181B] transition-colors">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="text-xs font-medium text-white">{layer.layer_name}</span>
+                  <span className="text-[11px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700 font-mono">
+                    {layer.category}
+                  </span>
                 </div>
-                <p className="text-slate-400 text-[11px] font-sans">{layer.source} • {layer.date}</p>
+                <div className="text-xs text-zinc-400 font-mono mt-0.5">{layer.source} · {layer.date}</div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* IoT Live Sensor Telemetry Feed */}
-        <div className="p-5 rounded-2xl glass-panel space-y-4 font-mono">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
-              <Radio className="w-4 h-4 text-emerald-400" />
-              Live Reserve IoT Sensor Telemetry Stream
-            </h3>
+        {/* IoT Stream */}
+        <div className={`${panelCls} overflow-hidden`}>
+          <div className="flex items-center justify-between p-4 border-b border-[#27272A]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white">
+              <Radio className="w-3.5 h-3.5 text-zinc-400" />
+              Hardware Mesh Telemetry Stream
+            </div>
             <button
-              onClick={handleSimulateTick}
-              className="px-3 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 font-mono"
+              onClick={handleTick}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-md bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-semibold shadow-sm transition-colors"
             >
-              <Zap className="w-3.5 h-3.5 fill-slate-950" />
-              Trigger Telemetry Tick
+              <Zap className="w-3 h-3 text-zinc-950" />
+              Trigger Ingestion Tick
             </button>
           </div>
-
-          <div className="space-y-2 max-h-64 overflow-y-auto">
+          <div className="divide-y divide-[#27272A] max-h-72 overflow-y-auto">
+            {iotTicks.length === 0 && (
+              <div className="p-6 text-center text-xs text-zinc-500">No telemetry ticks received.</div>
+            )}
             {iotTicks.map((tick, i) => (
-              <div key={i} className="p-3 rounded-xl bg-jungle-950 border border-emerald-500/30 text-xs flex items-center justify-between font-mono">
+              <div key={i} className="p-3.5 hover:bg-[#18181B] transition-colors flex items-center justify-between gap-2">
                 <div>
-                  <div className="font-bold text-emerald-400">{tick.sensor_id} ({tick.station_code})</div>
-                  <div className="text-[10px] text-slate-500">{new Date(tick.timestamp).toLocaleTimeString()}</div>
+                  <div className="text-xs font-medium text-white font-mono">{tick.sensor_id} ({tick.station_code})</div>
+                  <div className="text-xs text-zinc-400 font-mono mt-0.5">{new Date(tick.timestamp).toLocaleTimeString()}</div>
                 </div>
-                <div className="text-right text-[11px] space-y-0.5">
-                  <div>
-                    <span className="text-slate-300">AQI: <strong>{tick.readings?.aqi ?? 'N/A'}</strong></span>
-                    {' | '}
-                    <span className="text-emerald-400">PM2.5: <strong>{tick.readings?.pm25 ?? 'N/A'}</strong></span>
-                  </div>
-                  <div className="text-[10px] text-slate-500 italic">
-                    Water Probe: <span className="text-amber-400/80 font-semibold">{tick.readings?.ph != null ? `pH ${tick.readings.ph}` : 'Data Not Available (Sensor Pending)'}</span>
+                <div className="text-right font-mono tabular-nums text-xs space-y-0.5">
+                  <div className="text-white">AQI: <strong>{tick.readings?.aqi ?? '—'}</strong></div>
+                  <div className="text-zinc-400 text-xs">
+                    PM2.5: {tick.readings?.pm25 ?? '—'}
+                    {tick.readings?.ph != null && ` · pH ${tick.readings.ph}`}
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+
       </div>
+
     </div>
   );
 }

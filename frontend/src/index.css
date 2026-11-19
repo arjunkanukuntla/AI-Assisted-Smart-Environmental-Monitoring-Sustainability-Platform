@@ -4,71 +4,99 @@
 
 @layer base {
   body {
-    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
-    background-color: #090E0B;
-    color: #ffffff;
+    font-family: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #09090B;
+    color: #FAFAFA;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    caret-color: #FAFAFA;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 }
 
-/* Tactical Bio-Reserve Control Panel Glass Style */
-.glass-panel {
-  background: rgba(17, 24, 19, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid #1D2A22;
-  box-shadow: none;
+/* Universal Text Selection */
+::selection {
+  background-color: #3F3F46;
+  color: #FFFFFF;
 }
 
-.glass-card {
-  background: #111813;
-  backdrop-filter: blur(8px);
-  border: 1px solid #1D2A22;
-  transition: all 0.15s ease-in-out;
+/* Tabular Numbers for Telemetry & Real-Time Data */
+.tabular-nums, table, [data-tabular] {
+  font-variant-numeric: tabular-nums;
 }
 
-.glass-card:hover {
-  border-color: #10B981;
-}
-
-/* Custom Scrollbar */
+/* Custom Minimalist Titanium Scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090E0B;
+  background: #09090B;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1D2A22;
-  border-radius: 2px;
+  background: #27272A;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #10B981;
+  background: #3F3F46;
 }
 
-/* Leaflet Container & Attribution Overrides */
+/* Accessible Focus States */
+:focus-visible {
+  outline: 2px solid #A1A1AA;
+  outline-offset: 2px;
+}
+
+/* Modern Card & Tactical Panel */
+.glass-panel,
+.glass-card,
+.govt-card {
+  background: #121215;
+  border: 1px solid #27272A;
+  border-radius: 0.5rem;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.glass-panel:hover,
+.glass-card:hover,
+.govt-card:hover {
+  border-color: #3F3F46;
+}
+
+/* Leaflet Container & Attribution */
 .leaflet-container {
   width: 100%;
   height: 100%;
-  border-radius: 0px;
+  border-radius: 0.5rem;
   z-index: 10;
-  background-color: #090E0B !important;
+  background-color: #09090B !important;
 }
 
 .leaflet-control-attribution {
-  background-color: #111813 !important;
-  color: #8E9A92 !important;
+  background-color: rgba(9, 9, 11, 0.95) !important;
+  color: #A1A1AA !important;
   box-shadow: none !important;
-  border: 1px solid #1D2A22 !important;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
-  font-size: 10px !important;
-  padding: 2px 6px !important;
+  border: 1px solid #27272A !important;
+  font-family: 'Outfit', system-ui, sans-serif !important;
+  font-size: 12px !important;
+  padding: 3px 8px !important;
+  border-radius: 4px !important;
 }
 
 .leaflet-control-attribution a {
-  color: #8E9A92 !important;
+  color: #E4E4E7 !important;
   text-decoration: underline !important;
+}
+.leaflet-control-attribution a:hover {
+  color: #FFFFFF !important;
 }

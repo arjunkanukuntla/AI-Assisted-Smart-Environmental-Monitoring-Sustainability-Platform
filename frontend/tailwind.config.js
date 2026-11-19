@@ -31,7 +31,7 @@ export default {
       },
       fontFamily: {
         mono: ['JetBrains Mono', 'Consolas', 'Fira Code', 'monospace'],
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['Outfit', 'system-ui', '-apple-system', 'sans-serif'],
       }
     },
   },

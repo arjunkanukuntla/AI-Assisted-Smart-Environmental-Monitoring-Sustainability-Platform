@@ -1,12 +1,17 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine, Base
+from app.database import engine, Base, SessionLocal
 from app.seed_data import seed_database
-from app.routers import data_management, analytics, optimization, public_portal, integrations
+from app.routers import data_management, analytics, optimization, public_portal, integrations, auth
 
 # Auto-create tables & seed database on app launch
 Base.metadata.create_all(bind=engine)
 seed_database()
+db_session = SessionLocal()
+try:
+    auth.seed_default_users(db_session)
+finally:
+    db_session.close()
 
 app = FastAPI(
     title="AI-Assisted Smart Environmental Monitoring Platform",
@@ -26,6 +31,7 @@ app.add_middleware(
 )
 
 # Register Module Routers
+app.include_router(auth.router)
 app.include_router(data_management.router)
 app.include_router(analytics.router)
 app.include_router(optimization.router)
@@ -35,11 +41,13 @@ app.include_router(integrations.router)
 @app.get("/")
 def root():
     return {
-        "platform": "AI-Assisted Smart Environmental Monitoring & Sustainability Platform",
+        "platform": "Smart Environmental Monitoring & Sustainability Platform",
         "status": "Online & Operational",
-        "team_members": ["P. Varshith", "Snehith", "Sai Vishal", "Arjun", "BV. Charan"],
+        "team_members": ["P. Varshith", "Operations Core", "Engineering"],
+        "environment": "production",
         "version": "1.0.0",
-        "documentation": "/docs"
+        "documentation": "/docs",
+        "api_prefix": "/api/v1"
     }
 
 if __name__ == "__main__":

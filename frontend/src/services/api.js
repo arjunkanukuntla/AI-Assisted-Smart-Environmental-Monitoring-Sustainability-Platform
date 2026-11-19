@@ -2,15 +2,23 @@ import axios from 'axios';
 
 const API_BASE = '/api/v1';
 
+// Automatically attach Bearer token to all requests if present in localStorage
+axios.interceptors.request.use((config) => {
+  try {
+    const token = localStorage.getItem('ecosphere_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (e) {
+    // ignore
+  }
+  return config;
+});
+
+import { COMPREHENSIVE_STATIONS } from './stations_data';
+
 // Default fallback telemetry in case backend API is unreachable or building
-const MOCK_STATIONS = [
-  { id: 1, name: "Central Eco-Tower Station", code: "ST-001", station_type: "Air", latitude: 17.385043, longitude: 78.486671, status: "Active", location_name: "Downtown Core" },
-  { id: 2, name: "Hussain Sagar Lake Station", code: "ST-002", station_type: "Water", latitude: 17.4239, longitude: 78.4738, status: "Active", location_name: "Hussain Sagar North" },
-  { id: 3, name: "Greenbelt Reserve Station", code: "ST-003", station_type: "Multi-sensor", latitude: 17.4435, longitude: 78.3772, status: "Active", location_name: "KBR National Park Area" },
-  { id: 4, name: "Industrial Sector Monitor", code: "ST-004", station_type: "Air", latitude: 17.5140, longitude: 78.3840, status: "Active", location_name: "Panchavati Industrial Corridor" },
-  { id: 5, name: "Musi River Basin Station", code: "ST-005", station_type: "Water", latitude: 17.3616, longitude: 78.4747, status: "Active", location_name: "Musi River South" },
-  { id: 6, name: "Warangal Smart Environmental Station", code: "ST-006", station_type: "Multi-sensor", latitude: 17.9784, longitude: 79.5941, status: "Active", location_name: "Warangal Kakatiya Corridor" }
-];
+const MOCK_STATIONS = COMPREHENSIVE_STATIONS;
 
 const MOCK_AIR = [
   { id: 1, station_id: 1, timestamp: new Date().toISOString(), aqi: 65, pm25: 22.4, pm10: 45.0, co2: 412, no2: 18.5, so2: 8.2, o3: 25.0, temperature: 28.5, humidity: 60, is_anomaly: false },
@@ -76,5 +84,10 @@ export const api = {
   getWeather: () => safeGet(() => axios.get(`${API_BASE}/integrations/weather`), { city: "Hyderabad / Warangal", temperature: 29.5, condition: "Partly Cloudy", humidity: 60 }),
   getOpenAQBenchmarks: () => safeGet(() => axios.get(`${API_BASE}/integrations/openaq-benchmarks`), []),
   getSatelliteImagery: () => safeGet(() => axios.get(`${API_BASE}/integrations/satellite-imagery`), { status: "Online" }),
-  getIoTTick: () => safeGet(() => axios.get(`${API_BASE}/integrations/iot-live-tick`), { node: "ST-006", status: "Active" })
+  getIoTTick: () => safeGet(() => axios.get(`${API_BASE}/integrations/iot-live-tick`), { node: "ST-006", status: "Active" }),
+
+  // Authentication & RBAC
+  login: (credentials) => axios.post(`${API_BASE}/auth/login`, credentials),
+  register: (userData) => axios.post(`${API_BASE}/auth/register`, userData),
+  getMe: (token) => axios.get(`${API_BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
 };

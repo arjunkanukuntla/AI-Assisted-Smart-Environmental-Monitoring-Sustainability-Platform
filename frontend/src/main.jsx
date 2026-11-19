@@ -2,6 +2,8 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.jsx'
 import './index.css'
+import './styles/scrollcraft.css'
+import './services/scrollcraft.js'
 
 // Catch any global errors (including Leaflet internal async errors) that
 // React's ErrorBoundary cannot catch (errors in timers, animation frames, etc.)

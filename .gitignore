@@ -21,3 +21,4 @@ environmental_monitoring.db
 .vscode/
 .idea/
 *.log
+.agents/

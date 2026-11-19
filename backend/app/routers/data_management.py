@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from app.database import get_db
@@ -9,18 +9,70 @@ from app.models.schemas import (
     Station, StationCreate, AirQualityRecord, AirQualityCreate,
     WaterQualityRecord, WaterQualityCreate, WasteSchedule, WasteScheduleCreate,
     EnergyRecord, EnergyRecordCreate, BiodiversityObservation, BiodiversityObservationCreate,
-    IncidentReport, IncidentReportCreate
+    IncidentReport, IncidentReportCreate,
+    UserModel
 )
+from app.routers.auth import get_current_user_from_token
 
-router = APIRouter(prefix="/api/v1/data", tags=["Phase 1 - Data & Resource Management"])
+router = APIRouter(prefix="/api/v1/data", tags=["Telemetry & Sensor Registry"])
 
 # --- Station CRUD ---
 @router.get("/stations", response_model=List[Station])
 def get_stations(db: Session = Depends(get_db)):
-    return db.query(StationModel).all()
+    stations = db.query(StationModel).all()
+    # Fetch most recent telemetry for each station
+    latest_air = (
+        db.query(AirQualityRecordModel.station_id, AirQualityRecordModel.aqi)
+        .order_by(AirQualityRecordModel.timestamp.desc())
+        .all()
+    )
+    air_map = {}
+    for st_id, aqi in latest_air:
+        if st_id not in air_map:
+            air_map[st_id] = aqi
+
+    latest_water = (
+        db.query(WaterQualityRecordModel.station_id, WaterQualityRecordModel.wqi)
+        .order_by(WaterQualityRecordModel.timestamp.desc())
+        .all()
+    )
+    water_map = {}
+    for st_id, wqi in latest_water:
+        if st_id not in water_map:
+            water_map[st_id] = wqi
+
+    res = []
+    for st in stations:
+        res.append(Station(
+            id=st.id,
+            name=st.name,
+            code=st.code,
+            station_type=st.station_type,
+            latitude=st.latitude,
+            longitude=st.longitude,
+            status=st.status,
+            location_name=st.location_name,
+            created_at=st.created_at,
+            aqi=air_map.get(st.id),
+            wqi=water_map.get(st.id)
+        ))
+    return res
 
 @router.post("/stations", response_model=Station)
-def create_station(station: StationCreate, db: Session = Depends(get_db)):
+def create_station(
+    station: StationCreate,
+    db: Session = Depends(get_db),
+    current_user: UserModel = Depends(get_current_user_from_token)
+):
+    """
+    Admin-only: Register a new physical monitoring station node.
+    Requires a valid Bearer token with role='admin' or role='operator'.
+    """
+    if current_user.role not in ("admin", "operator"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Station provisioning requires Administrator or Operator credentials."
+        )
     db_station = StationModel(**station.model_dump())
     db.add(db_station)
     db.commit()

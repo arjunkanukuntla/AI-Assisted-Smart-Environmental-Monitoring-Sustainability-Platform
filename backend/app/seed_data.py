@@ -11,25 +11,22 @@ def seed_database():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
 
-    # Check if already seeded
-    if db.query(StationModel).first():
-        print("Database already seeded.")
-        db.close()
-        return
+    print("Synchronizing environmental monitoring stations and telemetry...")
 
-    print("Seeding database with environmental telemetry and records...")
+    from app.stations_seed_list import STATIONS_DATA
+    comprehensive_stations = STATIONS_DATA
 
-    # 1. Monitoring Stations
-    stations = [
-        StationModel(name="Central Eco-Tower Station", code="ST-001", station_type="Air", latitude=17.385043, longitude=78.486671, status="Active", location_name="Downtown Core"),
-        StationModel(name="Hussain Sagar Lake Station", code="ST-002", station_type="Water", latitude=17.4239, longitude=78.4738, status="Active", location_name="Hussain Sagar North"),
-        StationModel(name="Greenbelt Reserve Station", code="ST-003", station_type="Multi-sensor", latitude=17.4435, longitude=78.3772, status="Active", location_name="KBR National Park Area"),
-        StationModel(name="Industrial Sector Monitor", code="ST-004", station_type="Air", latitude=17.5140, longitude=78.3840, status="Active", location_name="Panchavati Industrial Corridor"),
-        StationModel(name="Musi River Basin Station", code="ST-005", station_type="Water", latitude=17.3616, longitude=78.4747, status="Active", location_name="Musi River South"),
-        StationModel(name="Warangal Smart Environmental Station", code="ST-006", station_type="Multi-sensor", latitude=17.9784, longitude=79.5941, status="Active", location_name="Warangal Kakatiya Corridor")
-    ]
-    db.add_all(stations)
+    existing_codes = {s.code for s in db.query(StationModel).all()}
+    stations = []
+    for s_data in comprehensive_stations:
+        if s_data["code"] not in existing_codes:
+            st = StationModel(**s_data)
+            db.add(st)
+            stations.append(st)
     db.commit()
+
+    # Re-fetch all stations for telemetry seeding
+    all_stations = db.query(StationModel).all()
 
     # 2. Historical Telemetry (Air & Water) - last 7 days
     now = datetime.utcnow()
@@ -105,16 +102,16 @@ def seed_database():
 
     # 5. Biodiversity Observations
     species = [
-        BiodiversityObservationModel(species_name="Spot-billed Pelican", category="Avian", count=14, habitat_zone="Hussain Sagar Lake Wetland", threat_level="Vulnerable", observed_by="Officer Snehith", latitude=17.4250, longitude=78.4750),
-        BiodiversityObservationModel(species_name="Indian Flying Fox", category="Fauna", count=35, habitat_zone="KBR National Park", threat_level="Low", observed_by="Officer Sai Vishal", latitude=17.4440, longitude=78.3780),
-        BiodiversityObservationModel(species_name="Smooth-coated Otter", category="Aquatic", count=4, habitat_zone="Musi Sanctuary", threat_level="Endangered", observed_by="Officer Arjun", latitude=17.3620, longitude=78.4760)
+        BiodiversityObservationModel(species_name="Spot-billed Pelican", category="Avian", count=14, habitat_zone="Hussain Sagar Lake Wetland", threat_level="Vulnerable", observed_by="Divisional Forest Officer (WL)", latitude=17.4250, longitude=78.4750),
+        BiodiversityObservationModel(species_name="Indian Flying Fox", category="Fauna", count=35, habitat_zone="KBR National Park", threat_level="Low", observed_by="State Biodiversity Board Survey", latitude=17.4440, longitude=78.3780),
+        BiodiversityObservationModel(species_name="Smooth-coated Otter", category="Aquatic", count=4, habitat_zone="Musi Sanctuary", threat_level="Endangered", observed_by="Wildlife Institute Field Officer", latitude=17.3620, longitude=78.4760)
     ]
     db.add_all(species)
 
     # 6. Environmental Incidents
     incidents = [
-        IncidentReportModel(title="High Chemical Turbidity Spurt", category="Water Contamination", severity="High", status="Investigating", description="Sudden industrial discharge detected upstream near Musi River Station ST-005.", location_name="Musi River South", latitude=17.3616, longitude=78.4747, reported_by="AI Telemetry Alert"),
-        IncidentReportModel(title="Overflowing E-Waste Bin at Tech Corridor", category="Illegal Dumping", severity="Moderate", status="Reported", description="Bin #E-14 fill capacity exceeded 95% near Block 4.", location_name="Tech Park Zone C", latitude=17.4400, longitude=78.3800, reported_by="P. Varshith")
+        IncidentReportModel(title="Elevated Turbidity Runoff Detected", category="Water Contamination", severity="High", status="Investigating", description="Industrial effluent discharge detected upstream of Musi River Station ST-005.", location_name="Musi River South", latitude=17.3616, longitude=78.4747, reported_by="CPCB Automated Sensor Alert"),
+        IncidentReportModel(title="Accumulated Commercial Waste at Urban Junction", category="Illegal Dumping", severity="Moderate", status="Reported", description="Bin capacity exceeded at Transit Corridor Block 4.", location_name="Tech Park Zone C", latitude=17.4400, longitude=78.3800, reported_by="Municipal Sanitation Inspector")
     ]
     db.add_all(incidents)
 

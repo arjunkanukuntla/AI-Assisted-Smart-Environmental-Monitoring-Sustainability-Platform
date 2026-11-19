@@ -1,6 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import { Users, AlertTriangle, Send, Trophy, CheckCircle, MapPin, HeartHandshake } from 'lucide-react';
+import { AlertTriangle, Send, Trophy, Users, X, MapPin } from 'lucide-react';
+
+const panelCls = 'bg-[#121215] border border-[#27272A] rounded-lg';
+const inputCls = 'w-full px-3 py-2 bg-[#09090B] border border-[#27272A] rounded-md text-xs text-white placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-colors';
+const selectCls = 'w-full px-3 py-2 bg-[#09090B] border border-[#27272A] rounded-md text-xs text-white focus:outline-none focus:border-zinc-400 transition-colors';
+
+function SeverityBadge({ sev }) {
+  const cls = sev === 'Severe' || sev === 'High'
+    ? 'bg-red-500/10 text-red-300 border-red-500/30'
+    : sev === 'Moderate'
+    ? 'bg-amber-500/10 text-amber-300 border-amber-500/30'
+    : 'bg-zinc-800 text-zinc-300 border-zinc-700';
+  return (
+    <span className={`text-[11px] px-2 py-0.5 rounded border font-medium font-sans ${cls}`}>
+      {sev}
+    </span>
+  );
+}
 
 export default function PublicPortal() {
   const [incidents, setIncidents] = useState([]);
@@ -8,248 +25,229 @@ export default function PublicPortal() {
   const [campaigns, setCampaigns] = useState(null);
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [formData, setFormData] = useState({
-    title: '', category: 'Air Pollution', severity: 'Moderate', description: '', location_name: '', latitude: 17.40, longitude: 78.45, reported_by: 'Citizen'
+    title: '', category: 'Air Pollution', severity: 'Moderate',
+    description: '', location_name: '', latitude: 17.40, longitude: 78.45, reported_by: 'Observer'
   });
 
   const loadPortalData = async () => {
     try {
       const [incRes, alertRes, campRes] = await Promise.all([
-        api.getIncidents(),
-        api.getAlerts(),
-        api.getCampaigns()
+        api.getIncidents(), api.getAlerts(), api.getCampaigns()
       ]);
       setIncidents(incRes.data);
       setAlerts(alertRes.data);
       setCampaigns(campRes.data);
     } catch (err) {
-      console.error("Error loading portal data:", err);
+      console.error('Error loading portal data:', err);
     }
   };
 
-  useEffect(() => {
-    loadPortalData();
-  }, []);
+  useEffect(() => { loadPortalData(); }, []);
 
-  const handleSubmitReport = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       await api.submitIncident(formData);
       setShowSubmitModal(false);
-      setFormData({ title: '', category: 'Air Pollution', severity: 'Moderate', description: '', location_name: '', latitude: 17.40, longitude: 78.45, reported_by: 'Citizen' });
+      setFormData({ title: '', category: 'Air Pollution', severity: 'Moderate', description: '', location_name: '', latitude: 17.40, longitude: 78.45, reported_by: 'Observer' });
       loadPortalData();
     } catch (err) {
-      alert("Failed to submit incident: " + err.message);
+      alert('Failed to submit: ' + err.message);
     }
   };
 
+  const set = (key) => (e) => setFormData(f => ({ ...f, [key]: e.target.value }));
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="p-6 rounded-2xl glass-panel border border-jungle-700 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="space-y-5 font-sans">
+
+      {/* Page header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-mono text-xs font-bold border border-purple-500/40">
-              SECTOR 05 MODULE
-            </span>
-            <h2 className="text-xl font-bold text-slate-100 font-mono uppercase">Ranger & Public Collaboration Portal</h2>
+          <div className="flex items-center gap-2 mb-0.5">
+            <AlertTriangle className="w-4 h-4 text-zinc-400" />
+            <h2 className="text-base font-semibold text-white">Community Environmental Reports</h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1 font-mono">
-            Enable field rangers, researchers, and local citizens to log environmental observations and receive emergency alerts.
+          <p className="text-xs text-zinc-400">
+            Spot smoke, open waste burning, or water pollution? Submit an observation so local teams can respond.
           </p>
         </div>
-
         <button
           onClick={() => setShowSubmitModal(true)}
-          className="px-4 py-2.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold text-xs font-mono flex items-center gap-2 transition shadow-lg shadow-purple-500/20"
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-semibold shadow-sm transition-colors shrink-0"
         >
-          <Send className="w-4 h-4 fill-slate-950" />
-          Log Sector Incident
+          <Send className="w-3.5 h-3.5 text-zinc-950" />
+          Submit a Report
         </button>
       </div>
 
-      {/* Community Stats Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 rounded-2xl glass-card border border-purple-500/40 flex items-center gap-4 font-mono">
-          <div className="p-3 rounded-xl bg-purple-950/60 border border-purple-500/40 text-purple-400">
-            <HeartHandshake className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-slate-100">{campaigns?.total_community_volunteers || 1420}</div>
-            <div className="text-xs text-slate-400 font-medium font-sans">Active Reserve Volunteers</div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl glass-card border border-emerald-500/40 flex items-center gap-4 font-mono">
-          <div className="p-3 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-400">
-            <Trophy className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-slate-100">{campaigns?.co2_reduction_ytd_tons || 384.5} Tons</div>
-            <div className="text-xs text-slate-400 font-medium font-sans">Reserve $CO_2$ Reduced YTD</div>
-          </div>
-        </div>
-
-        <div className="p-4 rounded-2xl glass-card border border-amber-500/40 flex items-center gap-4 font-mono">
-          <div className="p-3 rounded-xl bg-amber-950/60 border border-amber-500/40 text-amber-400">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-bold text-slate-100">{alerts.length} Active</div>
-            <div className="text-xs text-slate-400 font-medium font-sans">Perimeter Safety Warnings</div>
-          </div>
-        </div>
+      {/* Summary stats strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        {[
+          {
+            icon: Users,
+            value: campaigns?.total_community_volunteers || 1420,
+            label: 'Community Observers Active'
+          },
+          {
+            icon: Trophy,
+            value: `${campaigns?.co2_reduction_ytd_tons || 384.5} t`,
+            label: 'Verified Emission Reductions'
+          },
+          {
+            icon: AlertTriangle,
+            value: `${alerts.length} Active`,
+            label: 'Local Safety Advisories'
+          }
+        ].map((stat, i) => {
+          const Icon = stat.icon;
+          return (
+            <div key={i} className={`${panelCls} p-4 flex items-center gap-3.5`}>
+              <div className="w-8 h-8 rounded-md bg-[#18181B] border border-[#27272A] flex items-center justify-center shrink-0">
+                <Icon className="w-4 h-4 text-zinc-300" />
+              </div>
+              <div>
+                <div className="text-xl font-semibold text-white font-mono tabular-nums">{stat.value}</div>
+                <div className="text-xs text-zinc-400 mt-0.5">{stat.label}</div>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Main Grid: Reported Incidents & Campaign Initiatives */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Citizen Reported Incidents List */}
-        <div className="p-5 rounded-2xl glass-panel space-y-4 font-mono">
-          <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-purple-400" />
-            Field Ranger & Incident Log ({incidents.length})
-          </h3>
+      {/* Main grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-            {incidents.map((inc) => (
-              <div key={inc.id} className="p-4 rounded-xl bg-jungle-950 border border-jungle-700 space-y-2 text-xs">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-100 text-sm font-sans">{inc.title}</span>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                    inc.severity === 'Severe' || inc.severity === 'High' ? 'bg-rose-950 text-rose-300 border border-rose-500/40' : 'bg-amber-950 text-amber-300'
-                  }`}>
-                    {inc.severity} Severity
+        {/* Incident log */}
+        <div className={`${panelCls} overflow-hidden`}>
+          <div className="flex items-center justify-between p-4 border-b border-[#27272A]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white">
+              <MapPin className="w-3.5 h-3.5 text-zinc-400" />
+              Active Incident Reports ({incidents.length})
+            </div>
+          </div>
+          <div className="divide-y divide-[#27272A] max-h-[480px] overflow-y-auto">
+            {incidents.length === 0 && (
+              <div className="p-8 text-center text-xs text-zinc-400">No active incidents reported.</div>
+            )}
+            {incidents.map(inc => (
+              <div key={inc.id} className="p-4 hover:bg-[#18181B] transition-colors">
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <span className="text-xs font-medium text-white leading-tight" style={{ textWrap: 'balance' }}>
+                    {inc.title}
                   </span>
+                  <SeverityBadge sev={inc.severity} />
                 </div>
-                <p className="text-slate-300 leading-relaxed font-sans">{inc.description}</p>
-                <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1">
-                  <span>Location: {inc.location_name}</span>
-                  <span>Reported by: {inc.reported_by}</span>
-                  <span className="text-emerald-400 font-bold">Status: {inc.status}</span>
+                <p className="text-xs text-zinc-400 mb-2.5 leading-relaxed" style={{ textWrap: 'pretty' }}>
+                  {inc.description}
+                </p>
+                <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+                  <span>{inc.location_name}</span>
+                  <span className="text-zinc-300">{inc.status}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Sustainability Initiatives & Campaigns */}
-        <div className="p-5 rounded-2xl glass-panel space-y-4">
-          <h3 className="text-xs font-bold text-amber-400 font-mono uppercase tracking-widest flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-emerald-400" />
-            Reserve Conservation Campaigns
-          </h3>
-
-          <div className="space-y-4">
-            {campaigns?.initiatives?.map((init) => (
-              <div key={init.id} className="p-4 rounded-xl bg-jungle-950 border border-jungle-700 space-y-2.5 text-xs font-mono">
-                <div className="flex justify-between items-center font-bold">
-                  <span className="text-slate-100 font-sans">{init.title}</span>
-                  <span className="text-emerald-400 font-mono">{init.current_progress_pct}%</span>
+        {/* Conservation campaigns */}
+        <div className={`${panelCls} overflow-hidden`}>
+          <div className="flex items-center gap-2 p-4 border-b border-[#27272A] text-xs font-semibold text-white">
+            <Trophy className="w-3.5 h-3.5 text-zinc-400" />
+            Mitigation &amp; Conservation Initiatives
+          </div>
+          <div className="divide-y divide-[#27272A]">
+            {campaigns?.initiatives?.map(init => (
+              <div key={init.id} className="p-4 hover:bg-[#18181B] transition-colors">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-white">{init.title}</span>
+                  <span className="text-xs font-mono tabular-nums text-zinc-200 font-semibold">{init.current_progress_pct}%</span>
                 </div>
-
-                <div className="w-full bg-jungle-900 h-2 rounded-full overflow-hidden border border-jungle-800">
+                <div className="w-full bg-[#09090B] h-1.5 rounded-full overflow-hidden border border-[#27272A] mb-2">
                   <div
-                    className="bg-gradient-to-r from-emerald-500 via-amber-400 to-emerald-400 h-full rounded-full transition-all duration-500"
+                    className="h-full bg-zinc-200 rounded-full"
                     style={{ width: `${init.current_progress_pct}%` }}
-                  ></div>
+                  />
                 </div>
-
-                <div className="flex items-center justify-between text-[10px] text-slate-400">
-                  <span>Target: {init.target_metric}</span>
-                  <span>Lead: {init.lead_agency}</span>
-                  <span className="text-emerald-300 font-bold">{init.status}</span>
+                <div className="flex items-center justify-between text-xs text-zinc-400 font-mono">
+                  <span>{init.target_metric}</span>
+                  <span>{init.lead_agency}</span>
+                  <span className="text-white font-medium">{init.status}</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
+
       </div>
 
       {/* Incident Report Modal */}
       {showSubmitModal && (
-        <div className="fixed inset-0 z-50 bg-jungle-950/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-jungle-900 border border-jungle-700 p-6 rounded-2xl w-full max-w-lg space-y-4 font-mono">
-            <h3 className="text-base font-bold text-amber-400 uppercase">Log Field Incident Report</h3>
-            <form onSubmit={handleSubmitReport} className="space-y-3 text-xs">
-              <div>
-                <label className="block text-slate-400 mb-1">Issue Title</label>
-                <input
-                  type="text" required
-                  value={formData.title}
-                  onChange={e => setFormData({...formData, title: e.target.value})}
-                  className="w-full bg-jungle-950 border border-jungle-700 rounded-lg p-2 text-slate-100"
-                  placeholder="e.g. Unusual Chemical Odor near Lake"
-                />
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4">
+          <div className="bg-[#121215] border border-[#27272A] rounded-xl w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-[#27272A]">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-white" />
+                <h3 className="text-sm font-semibold text-white">Log Environmental Incident</h3>
               </div>
-
-              <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setShowSubmitModal(false)}
+                className="p-1 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="p-4 space-y-3.5">
+              <div>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Incident Summary</label>
+                <input type="text" required value={formData.title} onChange={set('title')}
+                  className={inputCls} placeholder="e.g. Chemical discharge detected in canal" />
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-slate-400 mb-1">Category</label>
-                  <select
-                    value={formData.category}
-                    onChange={e => setFormData({...formData, category: e.target.value})}
-                    className="w-full bg-jungle-950 border border-jungle-700 rounded-lg p-2 text-slate-100"
-                  >
-                    <option value="Air Pollution">Air Pollution</option>
-                    <option value="Water Contamination">Water Contamination</option>
-                    <option value="Illegal Dumping">Illegal Dumping</option>
-                    <option value="Deforestation">Deforestation</option>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">Category</label>
+                  <select value={formData.category} onChange={set('category')} className={selectCls}>
+                    <option>Air Pollution</option>
+                    <option>Water Contamination</option>
+                    <option>Illegal Dumping</option>
+                    <option>Deforestation</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-slate-400 mb-1">Severity Level</label>
-                  <select
-                    value={formData.severity}
-                    onChange={e => setFormData({...formData, severity: e.target.value})}
-                    className="w-full bg-jungle-950 border border-jungle-700 rounded-lg p-2 text-slate-100"
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Moderate">Moderate</option>
-                    <option value="High">High</option>
-                    <option value="Severe">Severe</option>
+                  <label className="block text-xs font-medium text-zinc-300 mb-1">Severity</label>
+                  <select value={formData.severity} onChange={set('severity')} className={selectCls}>
+                    <option>Low</option>
+                    <option>Moderate</option>
+                    <option>High</option>
+                    <option>Severe</option>
                   </select>
                 </div>
               </div>
-
               <div>
-                <label className="block text-slate-400 mb-1">Location Name</label>
-                <input
-                  type="text" required
-                  value={formData.location_name}
-                  onChange={e => setFormData({...formData, location_name: e.target.value})}
-                  className="w-full bg-jungle-950 border border-jungle-700 rounded-lg p-2 text-slate-100"
-                  placeholder="e.g. Sector 5 Basin"
-                />
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Location / Site</label>
+                <input type="text" required value={formData.location_name} onChange={set('location_name')}
+                  className={inputCls} placeholder="e.g. Hussain Sagar North Basin, Hyderabad" />
               </div>
-
               <div>
-                <label className="block text-slate-400 mb-1">Description</label>
-                <textarea
-                  rows="3" required
-                  value={formData.description}
-                  onChange={e => setFormData({...formData, description: e.target.value})}
-                  className="w-full bg-jungle-950 border border-jungle-700 rounded-lg p-2 text-slate-100 font-sans"
-                  placeholder="Provide observations..."
-                ></textarea>
+                <label className="block text-xs font-medium text-zinc-300 mb-1">Observation Details</label>
+                <textarea rows={3} required value={formData.description} onChange={set('description')}
+                  className={`${inputCls} resize-none`} placeholder="Provide sensor readings or physical observations…" />
               </div>
-
               <div className="flex justify-end gap-2 pt-2">
-                <button
-                  type="button" onClick={() => setShowSubmitModal(false)}
-                  className="px-4 py-2 rounded-xl bg-jungle-950 text-slate-400 font-bold"
-                >
+                <button type="button" onClick={() => setShowSubmitModal(false)}
+                  className="px-3.5 py-2 rounded-md text-xs text-zinc-300 hover:text-white bg-[#18181B] border border-[#27272A] transition-colors">
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-purple-500 text-slate-950 font-bold"
-                >
-                  Submit Log
+                <button type="submit"
+                  className="px-4 py-2 rounded-md text-xs text-zinc-950 font-semibold bg-white hover:bg-zinc-200 transition-colors shadow-sm">
+                  Submit Report
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }

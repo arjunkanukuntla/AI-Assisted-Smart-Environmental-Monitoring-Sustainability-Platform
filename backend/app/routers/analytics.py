@@ -4,7 +4,7 @@ from app.database import get_db
 from app.models.schemas import AirQualityRecordModel, WaterQualityRecordModel, EnergyRecordModel, WasteScheduleModel
 from app.services.ml_engine import ml_engine
 
-router = APIRouter(prefix="/api/v1/analytics", tags=["Phase 2 - Analytics & Sustainability"])
+router = APIRouter(prefix="/api/v1/analytics", tags=["Environmental Analytics & AI"])
 
 @router.get("/trends")
 def get_analytics_trends(db: Session = Depends(get_db)):

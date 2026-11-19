@@ -19,8 +19,8 @@ export default function RouteVisualizer({ stops = [], totalKm = 0, fuelSaved = 0
   const polylineCoords = stops.map(s => [s.latitude, s.longitude]);
 
   return (
-    <div className="space-y-3">
-      <div className="w-full h-80 rounded-2xl overflow-hidden border border-slate-800 shadow-2xl relative">
+    <div className="space-y-3 font-sans">
+      <div className="w-full h-80 rounded-md overflow-hidden border border-[#1F2937] relative">
         <MapContainer
           center={defaultCenter}
           zoom={11}
@@ -39,11 +39,11 @@ export default function RouteVisualizer({ stops = [], totalKm = 0, fuelSaved = 0
               icon={nodeIcon(stop.bin_capacity_pct)}
             >
               <Popup>
-                <div className="p-2 text-slate-900 space-y-1">
-                  <div className="font-bold text-sm text-emerald-700">Stop #{index + 1}: {stop.zone_name}</div>
-                  <div className="text-xs font-semibold">Collector: {stop.collector_assigned}</div>
-                  <div className="text-xs">Waste Type: {stop.waste_type}</div>
-                  <div className="text-xs font-bold text-rose-600">Fill Capacity: {stop.bin_capacity_pct}%</div>
+                <div className="p-1.5 text-zinc-100 font-sans space-y-1">
+                  <div className="font-semibold text-xs text-white">Stop #{index + 1}: {stop.zone_name}</div>
+                  <div className="text-[11px] text-zinc-300">Collector: {stop.collector_assigned}</div>
+                  <div className="text-[11px] text-zinc-400">Waste: {stop.waste_type}</div>
+                  <div className="text-[11px] font-mono font-semibold text-amber-400">Capacity: {stop.bin_capacity_pct}%</div>
                 </div>
               </Popup>
             </Marker>
@@ -52,27 +52,27 @@ export default function RouteVisualizer({ stops = [], totalKm = 0, fuelSaved = 0
           {polylineCoords.length > 1 && (
             <Polyline
               positions={polylineCoords}
-              color="#22c55e"
-              weight={4}
-              dashArray="6, 8"
+              color="#FAFAFA"
+              weight={3}
+              dashArray="6, 6"
             />
           )}
         </MapContainer>
       </div>
 
       {/* Optimization Summary Bar */}
-      <div className="p-4 rounded-xl bg-slate-900/80 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-4 text-xs font-medium">
+      <div className="p-3.5 rounded-md bg-[#09090B] border border-[#27272A] flex flex-wrap items-center justify-between gap-4 text-xs font-mono tabular-nums">
         <div className="flex items-center gap-2">
-          <span className="text-slate-400">Total Route Distance:</span>
-          <span className="text-emerald-400 font-bold text-sm">{totalKm} km</span>
+          <span className="text-zinc-400 font-sans">Total Distance:</span>
+          <span className="text-white font-semibold text-sm">{totalKm} km</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-400">Fuel Saved:</span>
-          <span className="text-teal-300 font-bold text-sm">{fuelSaved} Liters</span>
+          <span className="text-zinc-400 font-sans">Fuel Conserved:</span>
+          <span className="text-sky-400 font-semibold text-sm">{fuelSaved} L</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-slate-400">$CO_2$ Reduced:</span>
-          <span className="text-cyan-300 font-bold text-sm">{co2Saved} kg</span>
+          <span className="text-zinc-400 font-sans">CO₂ Offset:</span>
+          <span className="text-zinc-200 font-semibold text-sm">{co2Saved} kg</span>
         </div>
       </div>
     </div>

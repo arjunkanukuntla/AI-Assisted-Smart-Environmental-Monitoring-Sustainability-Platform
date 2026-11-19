@@ -1,7 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../services/api';
 import RouteVisualizer from '../components/RouteVisualizer';
-import { BrainCircuit, Truck, Zap, Gauge, Play, CheckCircle2, ShieldAlert, Cpu } from 'lucide-react';
+import { BrainCircuit, Truck, Zap, Play, CheckCircle2, Cpu, RefreshCw } from 'lucide-react';
+
+const panelCls = 'bg-[#121215] border border-[#27272A] rounded-lg';
+const metricTile = 'p-3 bg-[#09090B] rounded-md border border-[#27272A]';
+
+function RangeRow({ label, value, unit, min, max, step, onChange, valueColor }) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-xs">
+        <span className="text-zinc-400">{label}</span>
+        <span className={`font-mono tabular-nums font-semibold ${valueColor}`}>{value} {unit}</span>
+      </div>
+      <input
+        type="range" min={min} max={max} step={step}
+        value={value}
+        onChange={e => onChange(Number(e.target.value))}
+        className="w-full h-1 rounded-full appearance-none bg-[#27272A] [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:cursor-pointer"
+      />
+    </div>
+  );
+}
 
 export default function OptimizationPage() {
   const [wasteRoute, setWasteRoute] = useState(null);
@@ -13,7 +33,7 @@ export default function OptimizationPage() {
   const [nodesCount, setNodesCount] = useState(15);
   const [loading, setLoading] = useState(true);
 
-  const fetchOptimizationData = async () => {
+  const fetchAll = async () => {
     setLoading(true);
     try {
       const [routeRes, energyRes, benchRes] = await Promise.all([
@@ -25,222 +45,196 @@ export default function OptimizationPage() {
       setEnergyResult(energyRes.data);
       setBenchmark(benchRes.data);
     } catch (err) {
-      console.error("Error loading reserve optimization:", err);
+      console.error('Optimization load error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchOptimizationData();
-  }, []);
+  useEffect(() => { fetchAll(); }, []);
 
-  const handleRecalculateEnergy = async () => {
+  const recalcEnergy = async () => {
     try {
       const res = await api.getEnergyBalance(energyDemand, solarAvailable, batteryStorage);
       setEnergyResult(res.data);
-    } catch (err) {
-      console.error("Error updating reserve energy balance:", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
-  const handleRunBenchmark = async () => {
+  const runBenchmark = async () => {
     try {
       const res = await api.getBenchmark(nodesCount);
       setBenchmark(res.data);
-    } catch (err) {
-      console.error("Error running benchmark:", err);
-    }
+    } catch (err) { console.error(err); }
   };
 
   return (
-    <div className="space-y-6 font-sans">
-      {/* Header */}
-      <div className="p-6 rounded-2xl glass-panel border border-jungle-700 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+    <div className="space-y-5 font-sans">
+
+      {/* Page header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded bg-amber-500/20 text-amber-400 font-mono text-xs font-bold border border-amber-500/40">
-              SECTOR 04 MODULE
-            </span>
-            <h2 className="text-xl font-bold text-slate-100 font-mono uppercase">Tactical Route & Microgrid Solver</h2>
+          <div className="flex items-center gap-2 mb-0.5">
+            <BrainCircuit className="w-4 h-4 text-zinc-400" />
+            <h2 className="text-base font-semibold text-white">Clean Route &amp; Commute Planner</h2>
           </div>
-          <p className="text-xs text-slate-400 mt-1 font-mono">
-            Graph TSP route solver for sector waste nodes, microgrid energy balance, and TDD algorithm runtime benchmarks.
+          <p className="text-xs text-zinc-400">
+            Find the shortest, cleanest route between city inspection stops to cut fuel waste and vehicle emissions.
           </p>
         </div>
-
         <button
-          onClick={fetchOptimizationData}
-          className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs font-mono flex items-center gap-2 transition shadow-lg shadow-amber-500/20"
+          onClick={fetchAll}
+          disabled={loading}
+          className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-md bg-white hover:bg-zinc-200 disabled:opacity-60 text-zinc-950 text-xs font-semibold shadow-sm transition-colors shrink-0"
         >
-          <Play className="w-4 h-4 fill-slate-950" />
-          Run Tactical Solver
+          {loading
+            ? <RefreshCw className="w-3.5 h-3.5 animate-spin text-zinc-950" />
+            : <Play className="w-3.5 h-3.5 text-zinc-950" />}
+          {loading ? 'Calculating…' : 'Recalculate Best Route'}
         </button>
       </div>
 
-      {/* Section 1: Waste Route Optimization Visualizer */}
-      <div className="p-5 rounded-2xl glass-panel space-y-4">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-2 border-b border-jungle-700 pb-3 font-mono">
-          <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
-            <Truck className="w-4 h-4 text-emerald-400" />
-            Sector Waste Collection Path Solver (TSP Nearest-Neighbor)
-          </h3>
-          <div className="flex items-center gap-3 text-xs">
-            <span className="text-slate-400">Baseline Distance: <strong className="text-slate-200">{wasteRoute?.baseline_standard_km} km</strong></span>
-            <span className="text-emerald-400 font-bold">Optimized: {wasteRoute?.total_optimized_km} km (-{wasteRoute?.efficiency_gain_pct}%)</span>
+      {/* Route Visualizer */}
+      <div className={panelCls}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-4 border-b border-[#27272A]">
+          <div className="flex items-center gap-2 text-xs font-semibold text-white">
+            <Truck className="w-3.5 h-3.5 text-zinc-400" />
+            Smart Clean Route Map
           </div>
+          {wasteRoute && (
+            <div className="flex items-center gap-3 text-xs font-mono tabular-nums">
+              <span className="text-zinc-400">Standard Path: <strong className="text-white">{wasteRoute.baseline_standard_km} km</strong></span>
+              <span className="text-emerald-400 font-semibold">EcoSphere Route: {wasteRoute.total_optimized_km} km (−{wasteRoute.efficiency_gain_pct}% distance)</span>
+            </div>
+          )}
         </div>
-
-        <RouteVisualizer
-          stops={wasteRoute?.optimized_stops || []}
-          totalKm={wasteRoute?.total_optimized_km || 0}
-          fuelSaved={wasteRoute?.fuel_saved_liters || 0}
-          co2Saved={wasteRoute?.co2_saved_kg || 0}
-        />
+        <div className="p-4">
+          <RouteVisualizer
+            stops={wasteRoute?.optimized_stops || []}
+            totalKm={wasteRoute?.total_optimized_km || 0}
+            fuelSaved={wasteRoute?.fuel_saved_liters || 0}
+            co2Saved={wasteRoute?.co2_saved_kg || 0}
+          />
+        </div>
       </div>
 
-      {/* Section 2: Energy Load Balancer & Algorithm Benchmark */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Microgrid Energy Load Balancer */}
-        <div className="p-5 rounded-2xl glass-panel space-y-4">
-          <h3 className="text-xs font-bold text-amber-400 uppercase font-mono tracking-widest flex items-center gap-2">
-            <Zap className="w-4 h-4 text-amber-400" />
-            Bio-Reserve Energy Microgrid Load Balancer
-          </h3>
+      {/* Energy + Benchmark */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          <div className="space-y-4 text-xs font-mono">
-            <div>
-              <div className="flex justify-between font-semibold mb-1 text-slate-300">
-                <span>Facility Demand:</span>
-                <span className="font-mono text-amber-400">{energyDemand} kW</span>
-              </div>
-              <input
-                type="range" min="100" max="2000" step="50"
-                value={energyDemand}
-                onChange={e => setEnergyDemand(Number(e.target.value))}
-                className="w-full accent-amber-400"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between font-semibold mb-1 text-slate-300">
-                <span>Solar Generation Available:</span>
-                <span className="font-mono text-emerald-400">{solarAvailable} kW</span>
-              </div>
-              <input
-                type="range" min="0" max="1500" step="50"
-                value={solarAvailable}
-                onChange={e => setSolarAvailable(Number(e.target.value))}
-                className="w-full accent-emerald-400"
-              />
-            </div>
-
-            <div>
-              <div className="flex justify-between font-semibold mb-1 text-slate-300">
-                <span>Battery Storage Reserve:</span>
-                <span className="font-mono text-teal-300">{batteryStorage} kW</span>
-              </div>
-              <input
-                type="range" min="0" max="800" step="25"
-                value={batteryStorage}
-                onChange={e => setBatteryStorage(Number(e.target.value))}
-                className="w-full accent-teal-400"
-              />
-            </div>
+        {/* Clean Energy Balancer */}
+        <div className={panelCls}>
+          <div className="flex items-center gap-2 p-4 border-b border-[#27272A] text-xs font-semibold text-white">
+            <Zap className="w-3.5 h-3.5 text-zinc-400" />
+            Clean Energy vs Grid Usage Calculator
+          </div>
+          <div className="p-4 space-y-4">
+            <RangeRow label="Facility Base Demand" value={energyDemand} unit="kW" min={100} max={2000} step={50}
+              onChange={setEnergyDemand} valueColor="text-white" />
+            <RangeRow label="Solar Array Generation" value={solarAvailable} unit="kW" min={0} max={1500} step={50}
+              onChange={setSolarAvailable} valueColor="text-zinc-200" />
+            <RangeRow label="Battery Storage Reserve" value={batteryStorage} unit="kW" min={0} max={800} step={25}
+              onChange={setBatteryStorage} valueColor="text-sky-400" />
 
             <button
-              onClick={handleRecalculateEnergy}
-              className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition shadow-md font-mono"
+              onClick={recalcEnergy}
+              className="w-full py-2 rounded-md bg-[#18181B] hover:bg-zinc-800 text-zinc-200 text-xs font-medium border border-[#27272A] transition-colors"
             >
-              Re-calculate Microgrid Flow
+              Recalculate Power Balance
             </button>
 
-            {/* Load Balance Result */}
             {energyResult && (
-              <div className="p-4 rounded-xl bg-jungle-950 border border-amber-500/30 space-y-2 font-mono">
-                <div className="flex items-center justify-between font-bold">
-                  <span>Clean Energy Ratio:</span>
-                  <span className="text-emerald-400 font-mono text-sm">{energyResult.clean_energy_ratio_pct}%</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-zinc-400">Clean Energy Mix Ratio</span>
+                  <span className="text-white font-semibold font-mono tabular-nums">{energyResult.clean_energy_ratio_pct}%</span>
                 </div>
-                <div className="grid grid-cols-3 gap-2 text-center text-[11px] pt-1">
-                  <div className="p-2 rounded bg-jungle-900 border border-jungle-700">
-                    <div className="text-slate-400">Solar</div>
-                    <div className="font-bold text-emerald-400">{energyResult.solar_power_used_kw} kW</div>
+                <div className="w-full bg-[#09090B] h-1.5 rounded-full overflow-hidden border border-[#27272A]">
+                  <div
+                    className="h-full bg-white rounded-full"
+                    style={{ width: `${Math.min(energyResult.clean_energy_ratio_pct, 100)}%` }}
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className={metricTile}>
+                    <div className="text-xs text-zinc-400 mb-0.5">Solar Used</div>
+                    <div className="text-sm font-semibold text-white font-mono tabular-nums">{energyResult.solar_power_used_kw} kW</div>
                   </div>
-                  <div className="p-2 rounded bg-jungle-900 border border-jungle-700">
-                    <div className="text-slate-400">Battery</div>
-                    <div className="font-bold text-teal-300">{energyResult.battery_discharge_kw} kW</div>
+                  <div className={metricTile}>
+                    <div className="text-xs text-zinc-400 mb-0.5">Battery Draw</div>
+                    <div className="text-sm font-semibold text-sky-400 font-mono tabular-nums">{energyResult.battery_discharge_kw} kW</div>
                   </div>
-                  <div className="p-2 rounded bg-jungle-900 border border-jungle-700">
-                    <div className="text-slate-400">Grid Drawn</div>
-                    <div className="font-bold text-rose-400">{energyResult.grid_power_drawn_kw} kW</div>
+                  <div className={metricTile}>
+                    <div className="text-xs text-zinc-400 mb-0.5">Grid Taken</div>
+                    <div className="text-sm font-semibold text-amber-400 font-mono tabular-nums">{energyResult.grid_power_drawn_kw} kW</div>
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-300 font-medium italic pt-1 font-sans">{energyResult.recommendation}</p>
+                {energyResult.recommendation && (
+                  <p className="text-xs text-zinc-400 leading-relaxed" style={{ textWrap: 'pretty' }}>
+                    {energyResult.recommendation}
+                  </p>
+                )}
               </div>
             )}
           </div>
         </div>
 
-        {/* Algorithm Runtime Benchmark */}
-        <div className="p-5 rounded-2xl glass-panel space-y-4 flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between font-mono">
-              <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-purple-400" />
-                TDD Algorithm Benchmark Suite
-              </h3>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400">Nodes:</span>
-                <input
-                  type="number" min="5" max="50" value={nodesCount}
-                  onChange={e => setNodesCount(Number(e.target.value))}
-                  className="w-14 bg-jungle-950 border border-jungle-700 rounded px-2 py-0.5 text-xs text-slate-100 font-mono"
-                />
-                <button
-                  onClick={handleRunBenchmark}
-                  className="px-2.5 py-1 rounded bg-purple-500 hover:bg-purple-400 text-slate-950 font-bold text-xs font-mono"
-                >
-                  Run
-                </button>
-              </div>
+        {/* Benchmark Suite */}
+        <div className={`${panelCls} flex flex-col`}>
+          <div className="flex items-center justify-between p-4 border-b border-[#27272A]">
+            <div className="flex items-center gap-2 text-xs font-semibold text-white">
+              <Cpu className="w-3.5 h-3.5 text-zinc-400" />
+              Algorithm Benchmark Suite
             </div>
-
-            {benchmark && (
-              <div className="mt-4 space-y-3 font-mono">
-                {/* Heuristic Solver Card */}
-                <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-xs space-y-1">
-                  <div className="flex justify-between font-bold text-emerald-300">
-                    <span>{benchmark.heuristic_solver.algorithm}</span>
-                    <span className="font-mono text-sm">{benchmark.heuristic_solver.time_ms} ms</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="number" min={5} max={50}
+                value={nodesCount}
+                onChange={e => setNodesCount(Number(e.target.value))}
+                className="w-14 px-2 py-1 bg-[#09090B] border border-[#27272A] rounded-md text-xs text-white font-mono text-center focus:outline-none focus:border-zinc-400 transition-colors"
+              />
+              <button
+                onClick={runBenchmark}
+                className="px-2.5 py-1 rounded-md bg-[#18181B] hover:bg-zinc-800 text-zinc-200 text-xs font-medium border border-[#27272A] transition-colors"
+              >
+                Benchmark
+              </button>
+            </div>
+          </div>
+          <div className="p-4 space-y-3 flex-1">
+            {benchmark ? (
+              <>
+                <div className="p-3 bg-[#09090B] border border-[#27272A] rounded-md space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-white">{benchmark.heuristic_solver?.algorithm}</span>
+                    <span className="font-mono tabular-nums text-white font-semibold">{benchmark.heuristic_solver?.time_ms} ms</span>
                   </div>
-                  <div className="text-[11px] text-slate-400">Quality: {benchmark.heuristic_solver.solution_quality}</div>
+                  <div className="text-xs text-zinc-400">Quality: {benchmark.heuristic_solver?.solution_quality}</div>
                 </div>
-
-                {/* Brute Force Card */}
-                <div className="p-3.5 rounded-xl bg-jungle-950 border border-jungle-800 text-xs space-y-1">
-                  <div className="flex justify-between font-bold text-slate-300">
-                    <span>{benchmark.brute_force_solver.algorithm}</span>
-                    <span className="font-mono text-sm text-slate-400">{benchmark.brute_force_solver.time_ms} ms</span>
+                <div className="p-3 bg-[#09090B] border border-[#27272A] rounded-md space-y-1">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-medium text-zinc-300">{benchmark.brute_force_solver?.algorithm}</span>
+                    <span className="font-mono tabular-nums text-zinc-400">{benchmark.brute_force_solver?.time_ms} ms</span>
                   </div>
-                  <div className="text-[11px] text-slate-400">Quality: {benchmark.brute_force_solver.solution_quality}</div>
+                  <div className="text-xs text-zinc-400">Quality: {benchmark.brute_force_solver?.solution_quality}</div>
                 </div>
-
-                <div className="p-3 rounded-xl bg-purple-950/40 border border-purple-500/30 text-center font-bold text-xs text-purple-300 font-mono">
-                  ⚡ Heuristic Speedup Factor: {benchmark.speedup_factor}x Faster than Brute Force
+                <div className="p-2.5 bg-[#18181B] border border-[#27272A] rounded-md text-center text-xs font-mono text-white font-medium">
+                  Heuristic is {benchmark.speedup_factor}× faster than brute force
                 </div>
-              </div>
+              </>
+            ) : (
+              <div className="text-center text-xs text-zinc-400 py-6">Run benchmark to compute execution time.</div>
             )}
           </div>
-
-          <div className="pt-3 border-t border-jungle-700 flex items-center justify-between text-xs font-mono text-slate-400">
-            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-              <CheckCircle2 className="w-4 h-4" /> 11 Pytest Backend Unit Tests Passing
+          <div className="p-3 border-t border-[#27272A] flex items-center justify-between text-xs font-mono text-zinc-400">
+            <span className="flex items-center gap-1.5 text-zinc-300 font-medium">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              11 Pytest Backend Tests Passing
             </span>
             <span>TDD Verified</span>
           </div>
         </div>
+
       </div>
+
     </div>
   );
 }
